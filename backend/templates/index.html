@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kenyan Price Compare</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Kenyan Price Comparison Tool</h1>
+        <form method="get">
+            <input type="text" name="q" placeholder="Search a product..." value="{{ query|default:'' }}">
+            <button type="submit">Search</button>
+        </form>
+
+        {% if products %}
+            <table>
+                <tr>
+    <th>Image</th>
+    <th>Product</th>
+    <th>Price (KES)</th>
+    <th>Retailer</th>
+    <th>Link</th>
+</tr>
+{% for p in products %}
+<tr>
+    <td>
+        {% if p.image_url %}
+            <img src="{{ p.image_url }}" alt="{{ p.product.name }}" style="height:80px;">
+        {% else %}
+            No image available
+        {% endif %}
+    </td>
+    <td>{{ p.product.name }}</td>
+    <td>KSh {{ p.price }}</td>
+    <td>{{ p.retailer.name }}</td>
+    <td><a href="{{ p.product_url }}" target="_blank">Buy Now</a></td>
+</tr>
+{% endfor %}
+
+                
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>
