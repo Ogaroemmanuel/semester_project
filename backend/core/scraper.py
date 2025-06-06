@@ -2,7 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 from .models import Product, Retailer, Price
 
+
 def scrape_jumia(query):
+    
+    print("Scraping jumia...")
+
+
     headers = {"User-Agent": "Mozilla/5.0"}
     search_url = f"https://www.jumia.co.ke/catalog/?q={query}"
     response = requests.get(search_url, headers=headers)
@@ -44,10 +49,12 @@ def scrape_jumia(query):
             product_url=product_url,
             image_url=image_url
         )
-        print("Scraping Kilimall...")
-        print(f"Saved product: {product_name} from Kilimall")
+        print(f"Saved product: {product_name} from jumia")
+        
 
 def scrape_kilimall(query):
+    print("Scraping Kilimall...")
+
     headers = {"User-Agent": "Mozilla/5.0"}
     search_url = f"https://www.kilimall.co.ke/catalog/?q={query}"
     response = requests.get(search_url, headers=headers)
@@ -89,9 +96,14 @@ def scrape_kilimall(query):
             product_url=product_url,
             image_url=image_url
         )
+        print(f"Saved product: {product_name} from kilimall")
+
 def scrape_masoko(query):
+    print("Scraping Masoko...")
+
     headers = {"User-Agent": "Mozilla/5.0"}
-    search_url = f"https://www.masoko.com/catalogsearch/result/?q={query}"
+    search_url = f"https://www.masoko.com/search?q={query}"
+
     response = requests.get(search_url, headers=headers)
 
     if response.status_code != 200:
@@ -131,50 +143,5 @@ def scrape_masoko(query):
             product_url=product_url,
             image_url=image_url
         )
+        print(f"Saved product: {product_name} from masoko")
         
-        
-        
-        
-            
-def scrape_skygarden(query):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    search_url = f"https://www.sky.garden/search?q={query}"
-    response = requests.get(search_url, headers=headers)
-
-    if response.status_code != 200:
-        print(f"Failed to fetch data from Sky.Garden. Status code: {response.status_code}")
-        return
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    retailer, _ = Retailer.objects.get_or_create(name="Sky.Garden", url="https://www.sky.garden")
-
-    product_containers = soup.select('div.product-card')
-
-    for item in product_containers:
-        name_tag = item.select_one('h2.product-title')
-        price_tag = item.select_one('span.product-price')
-        link_tag = item.select_one('a.product-link')
-        image_tag = item.select_one('img')
-
-        if not name_tag or not price_tag or not link_tag or not image_tag:
-            continue
-
-        product_name = name_tag.text.strip()
-        price_text = price_tag.text.strip().replace("KSh", "").replace(",", "")
-        try:
-            price = float(price_text)
-        except ValueError:
-            continue
-
-        product_url = "https://www.sky.garden" + link_tag['href']
-        image_url = image_tag.get('src')
-
-        product, _ = Product.objects.get_or_create(name=product_name)
-        Price.objects.create(
-            product=product,
-            retailer=retailer,
-            price=price,
-            product_url=product_url,
-            image_url=image_url
-        )
