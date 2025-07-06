@@ -3,173 +3,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QUICK PRICE COMP(QPC)</title>
     <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
 <body>
+    <header>
+        <nav>
+            <ul>
+                {% if not user.is_authenticated %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                {% else %}
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                    <li>Welcome, {{ user.username }}</li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
     <div class="container">
         <h1>🛒 QUICK PRICE COMP(QPC)</h1>
         <form method="get">
             <input type="text" name="q" placeholder="Search a product..." value="{{ query|default:'' }}">
             <button type="submit">Search</button>
         </form>
-
         {% if products %}
             <table>
                 <tr>
-    <th>Image</th>
-    <th>Product</th>
-    <th>Price (KES)</th>
-    <th>Retailer</th>
-    <th>Link</th>
-</tr>
-{% for p in products %}
-<tr>
-    <td>
-        {% if p.image_url %}
-            <img src="{{ p.image_url }}" alt="{{ p.product.name }}" style="height:80px;">
-        {% else %}
-            No image available
-        {% endif %}
-    </td>
-    <td>{{ p.product.name }}</td>
-    <td>KSh {{ p.price }}</td>
-    <td>{{ p.retailer.name }}</td>
-    <td><a href="{{ p.product_url }}" target="_blank">Buy Now</a></td>
-</tr>
-{% endfor %}
-
-                
+                    <th>Image</th>
+                    <th>Product</th>
+                    <th>Price (KES)</th>
+                    <th>Retailer</th>
+                    <th>Link</th>
+                </tr>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        {% if p.image_url %}
+                            <img src="{{ p.image_url }}" alt="{{ p.product.name }}" style="height:80px;">
+                        {% else %}
+                            No image available
+                        {% endif %}
+                    </td>
+                    <td>{{ p.product.name }}</td>
+                    <td>KSh {{ p.price }}</td>
+                    <td>{{ p.retailer.name }}</td>
+                    <td><a href="{{ p.product_url }}" target="_blank">Buy Now</a></td>
+                </tr>
+                {% endfor %}
             </table>
         {% endif %}
     </div>
 </body>
 </html>
-<style>
-    body {
-        background: #f7f7fa;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .container {
-        max-width: 900px;
-        margin: 40px auto;
-        background: #fff;
-        padding: 32px 40px 40px 40px;
-        border-radius: 16px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    }
-    h1 {
-        text-align: center;
-        color: #2d3748;
-        margin-bottom: 32px;
-        letter-spacing: 1px;
-    }
-    form {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 32px;
-        gap: 8px;
-    }
-    input[type="text"] {
-        width: 320px;
-        padding: 10px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 1rem;
-        transition: border 0.2s;
-    }
-    input[type="text"]:focus {
-        border: 1.5px solid #3182ce;
-        outline: none;
-    }
-    button {
-        background: #3182ce;
-        color: #fff;
-        border: none;
-        padding: 10px 22px;
-        border-radius: 6px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    button:hover {
-        background: #2563eb;
-    }
-    table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin-top: 16px;
-        background: #f9fafb;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    th, td {
-        padding: 16px 12px;
-        text-align: left;
-    }
-    th {
-        background: #3182ce;
-        color: #fff;
-        font-weight: 600;
-        font-size: 1.05rem;
-        border-bottom: 2px solid #2563eb;
-    }
-    tr:nth-child(even) td {
-        background: #e7f0fa;
-    }
-    tr:hover td {
-        background: #dbeafe;
-        transition: background 0.2s;
-    }
-    td img {
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(49,130,206,0.08);
-        background: #fff;
-        padding: 4px;
-    }
-    a {
-        color: #2563eb;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s;
-    }
-    a:hover {
-        color: #1d4ed8;
-        text-decoration: underline;
-    }
-</style>
-<style>
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        width: 100vw;
-        box-sizing: border-box;
-    }
-    body {
-        min-height: 100vh;
-        width: 100vw;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        align-items: stretch;
-        justify-content: stretch;
-    }
-    .container {
-        min-height: 100vh;
-        min-width: 100vw;
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-        border-radius: 0;
-        box-shadow: none;
-        padding: 32px 0 0 0;
-    }
-    table {
-        border-radius: 0;
-        box-shadow: none;
-    }
-</style>
