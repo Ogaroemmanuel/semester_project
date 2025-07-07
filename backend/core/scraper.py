@@ -57,46 +57,54 @@ def scrape_kilimall(query):
     print("Scraping Kilimall...")
 
     options = Options()
-    options.add_argument("--headless")
+    options.add_argument("--headless")  # Run in headless mode
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     driver = webdriver.Chrome(options=options)
 
-    search_url = f"https://www.kilimall.co.ke/catalog/?q={query}"
-    driver.get(search_url)
-    time.sleep(3)  # Wait for JS to load content
+    try:
+        search_url = f"https://www.kilimall.co.ke/catalog/?q={query}"
+        driver.get(search_url)
+        time.sleep(5)  # Increased wait time for JS to load content
 
-    retailer, _ = Retailer.objects.get_or_create(name="Kilimall", url="https://www.kilimall.co.ke")
+        retailer, _ = Retailer.objects.get_or_create(name="Kilimall", url="https://www.kilimall.co.ke")
 
-    items = driver.find_elements(By.CSS_SELECTOR, "div.item")
+        # Wait for elements to load
+        items = driver.find_elements(By.CSS_SELECTOR, "div.item")
 
-    for item in items:
-        try:
-            name_tag = item.find_element(By.CSS_SELECTOR, "div.title")
-            price_tag = item.find_element(By.CSS_SELECTOR, "span.price")
-            link_tag = item.find_element(By.CSS_SELECTOR, "a")
-            image_tag = item.find_element(By.CSS_SELECTOR, "img")
-        except Exception:
-            continue
+        if not items:
+            print("No items found on the page.")
+            return
 
-        product_name = name_tag.text.strip()
-        price_text = price_tag.text.strip().replace("KSh", "").replace(",", "")
-        try:
-            price = float(price_text)
-        except ValueError:
-            continue
+        for item in items:
+            try:
+                name_tag = item.find_element(By.CSS_SELECTOR, "div.title")
+                price_tag = item.find_element(By.CSS_SELECTOR, "span.price")
+                link_tag = item.find_element(By.CSS_SELECTOR, "a")
+                image_tag = item.find_element(By.CSS_SELECTOR, "img")
 
-        product_url = "https://www.kilimall.co.ke" + link_tag.get_attribute('href')
-        image_url = image_tag.get_attribute('src')
+                product_name = name_tag.text.strip()
+                price_text = price_tag.text.strip().replace("KSh", "").replace(",", "")
+                price = float(price_text) if price_text else 0.0
 
-        product, _ = Product.objects.get_or_create(name=product_name)
-        Price.objects.create(
-            product=product,
-            retailer=retailer,
-            price=price,
-            product_url=product_url,
-            image_url=image_url
-        )
-        print(f"Saved product: {product_name} from kilimall")
+                product_url = "https://www.kilimall.co.ke" + link_tag.get_attribute('href')
+                image_url = image_tag.get_attribute('src')
 
-    driver.quit()
+                product, _ = Product.objects.get_or_create(name=product_name)
+                Price.objects.create(
+                    product=product,
+                    retailer=retailer,
+                    price=price,
+                    product_url=product_url,
+                    image_url=image_url
+                )
+                print(f"Saved product: {product_name} from Kilimall")
+
+            except Exception as e:
+                print(f"Error processing item: {e}")
+
+    except Exception as e:
+        print(f"Failed to scrape Kilimall: {e}")
+
+    finally:
+        driver.quit()
