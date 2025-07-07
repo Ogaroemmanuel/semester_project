@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
+from .scraper import scrape_jumia, scrape_kilimall
+from .models import Product
 
 def home(request):
     return render(request, 'home.html')
@@ -15,5 +17,10 @@ def register(request):
     return render(request, 'register.html', {'form': form})
 
 def index(request):
-    # your logic here
-    return render(request, 'index.html')
+    query = request.GET.get('q')
+    products = []
+    if query:
+        scrape_jumia(query)
+        scrape_kilimall(query)
+        products = Product.objects.filter(name__icontains=query)
+    return render(request, 'index.html', {'products': products, 'query': query})
