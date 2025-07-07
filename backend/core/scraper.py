@@ -1,77 +1,102 @@
-# === IMPORT REQUIRED MODULES ===
-from selenium import webdriver  # lets us control the browser
-from selenium.webdriver.chrome.service import Service  # helps run ChromeDriver
-from selenium.webdriver.chrome.options import Options  # allows headless mode (no window)
-from bs4 import BeautifulSoup  # lets us extract content from HTML
-import requests  # for simple web requests
-import time  # to pause and wait for pages to load
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+import time
+from .models import Product, Retailer, Price
 
+def scrape_jumia(query):
+    print("Scraping jumia...")
 
-# === FUNCTION TO SCRAPE KILIMALL ===
-def scrape_kilimall():
-    print("\nScraping Kilimall...")
+    headers = {"User-Agent": "Mozilla/5.0"}
+    search_url = f"https://www.jumia.co.ke/catalog/?q={query}"
+    response = requests.get(search_url, headers=headers)
 
-    # 1. Set up Chrome in headless mode (so it runs in background)
-    chrome_options = Options()
-    chrome_options.add_argument('--headless')  # Run without opening browser window
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
+    if response.status_code != 200:
+        print(f"Failed to fetch data from Jumia. Status code: {response.status_code}")
+        return
 
-    # 2. Tell Selenium where to find ChromeDriver
-    service = Service('C:/path/to/chromedriver.exe')  # Change to your real path
-
-    # 3. Start Chrome using Selenium
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    # 4. Go to Kilimall search page
-    url = "https://www.kilimall.co.ke/new/commoditysearch?keyword=phone"
-    driver.get(url)
-
-    # 5. Wait for the page to fully load (especially JavaScript)
-    time.sleep(5)
-
-    # 6. Get the HTML code of the page
-    html = driver.page_source
-
-    # 7. Use BeautifulSoup to extract data from that HTML
-    soup = BeautifulSoup(html, 'html.parser')
-
-    # 8. Find product boxes (inspect the site to find correct class name)
-    products = soup.find_all('div', class_='product-box')  # may need to change this
-
-    # 9. Print each product (simplified)
-    for product in products:
-        print("Kilimall Product:", product.text.strip())
-
-    # 10. Close the browser
-    driver.quit()
-
-
-# === FUNCTION TO SCRAPE JUMIA ===
-def scrape_jumia():
-    print("\nScraping Jumia...")
-
-    # 1. Set up the URL and headers
-    url = "https://www.jumia.co.ke/catalog/?q=phone"
-    headers = {
-        "User-Agent": "Mozilla/5.0"  # Pretend to be a normal browser
-    }
-
-    # 2. Make a web request to Jumia
-    response = requests.get(url, headers=headers)
-
-    # 3. Use BeautifulSoup to read the HTML from the page
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # 4. Find product containers (inspect site to confirm class name)
-    products = soup.find_all('article', class_='prd')  # common for Jumia
+    retailer, _ = Retailer.objects.get_or_create(name="Jumia", url="https://www.jumia.co.ke")
 
-    # 5. Print each product (simplified)
-    for product in products:
-        print("Jumia Product:", product.text.strip())
+    product_containers = soup.select('article.prd')
+
+    for item in product_containers:
+        name_tag = item.select_one('h3.name')
+        price_tag = item.select_one('div.prc')
+        link_tag = item.select_one('a.core')
+        image_tag = item.select_one('img')
+
+        if not name_tag or not price_tag or not link_tag or not image_tag:
+            continue
+
+        product_name = name_tag.text.strip()
+        price_text = price_tag.text.strip().replace("KSh", "").replace(",", "")
+        try:
+            price = float(price_text)
+        except ValueError:
+            continue
+
+        product_url = "https://www.jumia.co.ke" + link_tag['href']
+        image_url = image_tag.get('data-src') or image_tag.get('src')
+
+        product, _ = Product.objects.get_or_create(name=product_name)
+        Price.objects.create(
+            product=product,
+            retailer=retailer,
+            price=price,
+            product_url=product_url,
+            image_url=image_url
+        )
+        print(f"Saved product: {product_name} from jumia")
 
 
-# === MAIN CODE ===
-if __name__ == "__main__":
-    scrape_kilimall()  # Scrape Kilimall using Selenium
-    scrape_jumia()     # Scrape Jumia using BeautifulSoup
+def scrape_kilimall(query):
+    print("Scraping Kilimall...")
+
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    driver = webdriver.Chrome(options=options)
+
+    search_url = f"https://www.kilimall.co.ke/catalog/?q={query}"
+    driver.get(search_url)
+    time.sleep(3)  # Wait for JS to load content
+
+    retailer, _ = Retailer.objects.get_or_create(name="Kilimall", url="https://www.kilimall.co.ke")
+
+    items = driver.find_elements(By.CSS_SELECTOR, "div.item")
+
+    for item in items:
+        try:
+            name_tag = item.find_element(By.CSS_SELECTOR, "div.title")
+            price_tag = item.find_element(By.CSS_SELECTOR, "span.price")
+            link_tag = item.find_element(By.CSS_SELECTOR, "a")
+            image_tag = item.find_element(By.CSS_SELECTOR, "img")
+        except Exception:
+            continue
+
+        product_name = name_tag.text.strip()
+        price_text = price_tag.text.strip().replace("KSh", "").replace(",", "")
+        try:
+            price = float(price_text)
+        except ValueError:
+            continue
+
+        product_url = "https://www.kilimall.co.ke" + link_tag.get_attribute('href')
+        image_url = image_tag.get_attribute('src')
+
+        product, _ = Product.objects.get_or_create(name=product_name)
+        Price.objects.create(
+            product=product,
+            retailer=retailer,
+            price=price,
+            product_url=product_url,
+            image_url=image_url
+        )
+        print(f"Saved product: {product_name} from kilimall")
+
+    driver.quit()
