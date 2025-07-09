@@ -23,4 +23,7 @@ def index(request):
         scrape_jumia(query)
         scrape_kilimall(query)
         products = Product.objects.filter(name__icontains=query)
+    print("Products found:", len(products))
+    for p in products:
+        print(p.name, p.price, p.retailer.name)
     return render(request, 'index.html', {'products': products, 'query': query})
