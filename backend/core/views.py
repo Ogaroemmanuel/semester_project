@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
-from .scraper import scrape_jumia, scrape_kilimall
+from .scraper import scrape_jumia, scrape_ebrahims
 from .models import Product
 
 def home(request):
@@ -21,7 +21,7 @@ def index(request):
     products = []
     if query:
         scrape_jumia(query)
-        scrape_kilimall(query)
+        scrape_ebrahims(query)
         products = Product.objects.filter(name__icontains=query)
     print("Products found:", len(products))
     for p in products:
