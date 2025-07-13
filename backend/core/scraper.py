@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 # ────────────── JUMIA SCRAPER ──────────────
-def scrape_jumia(query):
+def scrape_jumia(query, update_existing=False):
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -39,7 +39,7 @@ def scrape_jumia(query):
 
         print(f"Jumia: {product_name}, Price: {product_price}, Image: {product_image}")
 
-        Product.objects.get_or_create(
+        obj, created = Product.objects.get_or_create(
             name=product_name,
             retailer=retailer,
             product_url=product_link,
@@ -48,9 +48,13 @@ def scrape_jumia(query):
                 'price': product_price,
             }
         )
+        if not created and update_existing:
+            obj.price = product_price
+            obj.image_url = product_image
+            obj.save()
 
 # ────────────── EBRAHIMS SCRAPER ──────────────
-def scrape_ebrahims(query):
+def scrape_ebrahims(query, update_existing=False):
     search_url = f"https://ebrahims.co.ke/?s={query}&post_type=product"
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(search_url, headers=headers)
@@ -78,9 +82,8 @@ def scrape_ebrahims(query):
 
         print(f"Ebrahims: {product_name}, Price: {product_price}, Image: {product_image}")
 
-        # Save to your database as needed
         retailer, _ = Retailer.objects.get_or_create(name="Ebrahims", url="https://ebrahims.co.ke")
-        Product.objects.get_or_create(
+        obj, created = Product.objects.get_or_create(
             name=product_name,
             retailer=retailer,
             product_url=product_link,
@@ -89,6 +92,10 @@ def scrape_ebrahims(query):
                 'price': product_price,
             }
         )
+        if not created and update_existing:
+            obj.price = product_price
+            obj.image_url = product_image
+            obj.save()
 
 
 
